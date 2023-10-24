@@ -7,7 +7,8 @@ class Program
     {
         var rootPath = @"C:\OSTState";
 
-        var fileSystemVisitor = new FileSystemVisitor(rootPath, fsi => fsi is FileInfo fi && fi.Extension == ".ini");
+        var repository = new DirectoryRepository();
+        var fileSystemVisitor = new FileSystemVisitor(fsi => fsi is FileInfo fi && fi.Extension == ".ini", repository);
 
         // subscribing
         fileSystemVisitor.Start += (sender, eventArgs) => Console.WriteLine("Traversal started.");
@@ -18,7 +19,7 @@ class Program
         {
             Console.WriteLine($"Filtered file found: {fsi.FullName}");
             // terminate condition
-            if (fsi.Name == "config.ini") 
+            if (fsi.Name == "config.ini")
             {
                 eventArgs.Terminate = true;
             }
@@ -26,7 +27,13 @@ class Program
         fileSystemVisitor.FilteredDirectoryFound += (fsi, eventArgs) => Console.WriteLine($"Filtered directory found: {fsi.FullName}");
 
         // traversing start
-        foreach (var fsi in fileSystemVisitor.Traverse())
+        foreach (var fsi in fileSystemVisitor.Traverse(rootPath))
+        {
+            Console.WriteLine(fsi.FullName);
+        }
+
+        // traversing start
+        foreach (var fsi in fileSystemVisitor.Traverse(rootPath + "/mmmm"))
         {
             Console.WriteLine(fsi.FullName);
         }

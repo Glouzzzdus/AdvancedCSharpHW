@@ -1,37 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-namespace AdvancedCSharp
+﻿namespace AdvancedCSharp
 {
     public class FileSystemVisitor
     {
         private readonly Func<FileSystemInfo, bool> _filter;
-        private readonly string _rootPath;
+        private readonly IDirectoryRepository _repository;
 
         public delegate void FileSystemVisitorHandler(FileSystemInfo info, VisitorEventArgs args);
 
-        public event EventHandler Start;
-        public event EventHandler Finish;
-        public event FileSystemVisitorHandler FileFound;
-        public event FileSystemVisitorHandler DirectoryFound;
-        public event FileSystemVisitorHandler FilteredFileFound;
-        public event FileSystemVisitorHandler FilteredDirectoryFound;
+        public event EventHandler? Start;
+        public event EventHandler? Finish;
+        public event FileSystemVisitorHandler? FileFound;
+        public event FileSystemVisitorHandler? DirectoryFound;
+        public event FileSystemVisitorHandler? FilteredFileFound;
+        public event FileSystemVisitorHandler? FilteredDirectoryFound;
 
-        public FileSystemVisitor(string rootPath, Func<FileSystemInfo, bool>? filter = null)
+        public FileSystemVisitor(Func<FileSystemInfo, bool> filter, IDirectoryRepository repository)
         {
-            _rootPath = rootPath;
+            ArgumentNullException.ThrowIfNull(filter, nameof(filter));
+            ArgumentNullException.ThrowIfNull(repository, nameof(repository));
+
             _filter = filter;
+            _repository = repository;
         }
 
-        public IEnumerable<FileSystemInfo> Traverse()
+        public IEnumerable<FileSystemInfo> Traverse(string rootPath)
         {
             OnStart();
 
-            var rootDirectory = new DirectoryInfo(_rootPath);
-            if (!rootDirectory.Exists)
-                throw new DirectoryNotFoundException("Root directory not found.");
+            var rootDirectory = new DirectoryInfo(rootPath);
+            //if (!rootDirectory.Exists)
+            //    throw new DirectoryNotFoundException("Root directory not found.");
 
             var result = TraverseDirectory(rootDirectory).ToList();
             OnFinish();
@@ -41,7 +39,7 @@ namespace AdvancedCSharp
 
         private IEnumerable<FileSystemInfo> TraverseDirectory(DirectoryInfo directory)
         {
-            foreach (var file in directory.GetFiles())
+            foreach (var file in _repository.GetFileInfos(directory.FullName))
             {
                 var args = new VisitorEventArgs();
                 OnFileFound(file, args);
@@ -57,7 +55,7 @@ namespace AdvancedCSharp
                 }
             }
 
-            foreach (var dir in directory.GetDirectories())
+            foreach (var dir in _repository.GetDirectoryInfos(directory.FullName))
             {
                 var args = new VisitorEventArgs();
                 OnDirectoryFound(dir, args);
@@ -88,3 +86,17 @@ namespace AdvancedCSharp
     }
 }
 
+public interface IDirectoryRepository
+{
+    IEnumerable<DirectoryInfo> GetDirectoryInfos(string path);
+    IEnumerable<FileInfo> GetFileInfos(string path);
+}
+
+public class DirectoryRepository : IDirectoryRepository
+{
+    public IEnumerable<DirectoryInfo> GetDirectoryInfos(string path)
+        => new DirectoryInfo(path).GetDirectories();
+
+    public IEnumerable<FileInfo> GetFileInfos(string path)
+        => new DirectoryInfo(path).GetFiles();
+}
