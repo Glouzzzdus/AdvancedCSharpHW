@@ -39,7 +39,7 @@
 
         private IEnumerable<FileSystemInfo> TraverseDirectory(DirectoryInfo directory)
         {
-            foreach (var file in _repository.GetFileInfos(directory.FullName))
+            foreach (var file in _repository.GetFileInfos(directory.Name))
             {
                 var args = new VisitorEventArgs();
                 OnFileFound(file, args);
@@ -55,7 +55,7 @@
                 }
             }
 
-            foreach (var dir in _repository.GetDirectoryInfos(directory.FullName))
+            foreach (var dir in _repository.GetDirectoryInfos(directory.Name))
             {
                 var args = new VisitorEventArgs();
                 OnDirectoryFound(dir, args);
